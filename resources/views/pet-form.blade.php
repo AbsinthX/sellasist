@@ -4,9 +4,11 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Sellasist Konrad Ptak Laravel + Vue</title>
-    @vite(['resources/css/index.css', 'resources/js/index.js'])
+    @vite(['resources/js/pet-form.js'])
 </head>
 <body>
-<div id="index"></div>
+<div id="pet-form"
+     data-id="{{ $id ?? '' }}">
+</div>
 </body>
 </html>

@@ -2,12 +2,18 @@
     <div>
         <h1>Pet Store Sellasist - Konrad Ptak</h1>
 
-        <!-- Licznik zwierząt -->
+        <!-- Counter -->
         <div class="counter" style="text-align: center; font-size: 2em;">
-            <p>Łączna liczba zwierząt: <strong>{{ pets.length }}</strong></p>
+            <p>Animals: <strong>{{ pets.length }}</strong></p>
+            <button
+                class="add-pet-button"
+                @click="goToAddPet"
+            >
+                Add animal
+            </button>
         </div>
 
-        <!-- Radio buttony do wyboru statusów -->
+        <!-- Statuses -->
         <div class="status-filter" style="text-align: center; font-size: 1.5em; margin-top: 20px;">
             <label style="margin: 0 10px;">
                 <input
@@ -38,15 +44,15 @@
             </label>
         </div>
 
-        <!-- Wyświetlanie błędów -->
+        <!-- Errors -->
         <div v-if="error" class="error">
-            Nie udało się pobrać listy zwierząt.
+            Failed to fetch the list of animals.
         </div>
 
-        <!-- Lista zwierząt -->
-        <div v-else>
+        <!-- Animals -->
+        <div v-else class="pets-container">
             <div v-if="pets.length === 0" class="no-data">
-                Brak zwierząt do wyświetlenia.
+                No animals to display.
             </div>
             <div v-else class="pets-list">
                 <div
@@ -56,15 +62,25 @@
                 >
                     <img
                         :src="pet.photoUrls[0] || 'https://via.placeholder.com/150'"
-                        alt="Zdjęcie zwierzęcia"
+                        alt="Image of the pet"
                         class="pet-photo"
                     />
                     <div class="pet-info">
                         <h2>{{ pet.name }}</h2>
                         <p><strong>ID:</strong> {{ pet.id }}</p>
                         <p><strong>Status:</strong> {{ pet.status }}</p>
-                        <button style="background-color: blue; color: white; padding: 5px 10px; border: none; border-radius: 5px; cursor: pointer; margin-right: 10px;" @click="editPet(pet.id)">Edytuj</button>
-                        <button style="background-color: red; color: white; padding: 5px 10px; border: none; border-radius: 5px; cursor: pointer;" @click="deletePet(pet.id)">Usuń</button>
+                        <button
+                            style="background-color: blue; color: white; padding: 5px 10px; border: none; border-radius: 5px; cursor: pointer; margin-right: 10px;"
+                            @click="goToEditPet(pet.id)"
+                        >
+                            Edit
+                        </button>
+                        <button
+                            style="background-color: red; color: white; padding: 5px 10px; border: none; border-radius: 5px; cursor: pointer;"
+                            @click="confirmDeletePet(pet.id)"
+                        >
+                            Delete
+                        </button>
                     </div>
                 </div>
             </div>
@@ -78,9 +94,8 @@ import axios from 'axios';
 
 const pets = ref([]);
 const error = ref(false);
-const selectedStatus = ref('available'); // Domyślnie zaznaczony status "available"
+const selectedStatus = ref('available');
 
-// Funkcja do pobierania zwierząt na podstawie wybranego statusu
 const fetchPets = async () => {
     try {
         error.value = false;
@@ -90,37 +105,46 @@ const fetchPets = async () => {
             return;
         }
 
-        // Tworzenie parametrów zapytania
         const params = new URLSearchParams();
         params.append('status', selectedStatus.value);
 
-        // Wysyłanie żądania do API
         const response = await axios.get(`/api/pets?${params.toString()}`);
-        pets.value = response.data;
+        console.log("Raw API data:", response.data);
+
+        pets.value = response.data
+            .filter((pet, index, self) =>
+                index === self.findIndex((p) => p.id === pet.id)
+            )
+            .filter((pet) => pet.status === selectedStatus.value);
     } catch (err) {
-        console.error('Błąd podczas pobierania danych:', err);
+        console.error('Error while fetching data:', err);
         error.value = true;
     }
 };
 
-// Funkcja do edycji zwierzęcia
-const editPet = (id) => {
-    console.log(`Edytuj zwierzę o ID: ${id}`);
-    // Tutaj dodaj logikę edycji zwierzęcia
+const goToEditPet = (id) => {
+    window.location.href = `/pet/${id}`;
 };
 
-// Funkcja do usuwania zwierzęcia
-const deletePet = async (id) => {
-    try {
-        console.log(`Usuń zwierzę o ID: ${id}`);
-        // Tutaj dodaj logikę usuwania zwierzęcia
-        await axios.delete(`/api/pets/${id}`);
-        fetchPets(); // Odśwież listę po usunięciu
-    } catch (err) {
-        console.error('Błąd podczas usuwania zwierzęcia:', err);
+const confirmDeletePet = async (id) => {
+    if (confirm('Are you sure you want to delete this animal?')) {
+        await deletePet(id);
     }
 };
 
-// Pobranie początkowych danych
+const deletePet = async (id) => {
+    try {
+        await axios.delete(`/api/pets/${id}`);
+        fetchPets();
+    } catch (err) {
+        console.error('Error while deleting the animal:', err);
+        alert('There was a problem while deleting the animal. Please try again.');
+    }
+};
+
+const goToAddPet = () => {
+    window.location.href = '/pet';
+};
+
 onMounted(fetchPets);
 </script>
